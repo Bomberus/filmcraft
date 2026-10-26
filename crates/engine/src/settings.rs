@@ -27,12 +27,18 @@ use crate::{EngineError, Result, Session};
 /// Essential Sound presets. v2: every Settings category.
 pub const PREFS_VERSION: u32 = 2;
 
+pub const SPEED_EDITOR_SENSITIVITY_MIN: u16 = 1;
+pub const SPEED_EDITOR_SENSITIVITY_MAX: u16 = 200;
+pub const SPEED_EDITOR_SENSITIVITY_DEFAULT: u16 = 100;
+
 // ------------------------------------------------------------------ category values
 
 /// Settings ▸ General.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralPrefs {
+    /// Speed Editor dial gain in percent; 100 preserves the original response.
+    pub speed_editor_sensitivity: u16,
     /// Interface language (persisted independently of projects): `en`, `ja`, `es`, `pt-br`, `uk`,
     /// `zh-cn`, `de`, `ru`, `fr`, `id`, `it`, or `system` (the default: the operating system's preferred language when the
     /// interface has it, otherwise English).
@@ -63,6 +69,7 @@ pub struct GeneralPrefs {
 impl Default for GeneralPrefs {
     fn default() -> Self {
         Self {
+            speed_editor_sensitivity: SPEED_EDITOR_SENSITIVITY_DEFAULT,
             interface_language: "system".into(),
             at_startup: "showHome".into(),
             when_opening_project: "showOpenDialog".into(),
@@ -1041,6 +1048,12 @@ static CATEGORIES: &[Category] = &[
             b("general.showCompatibilityIssues", "Show system compatibility issues at startup", false),
             b("general.showProjectBinInTab", "Show \"Project:\" and \"Bin:\" in Project panel tab", false),
             b("general.showMaskTrackerPreview", "Show Mask Tracker Preview", false),
+            f(
+                "general.speedEditorSensitivity",
+                "Speed Editor knob sensitivity",
+                int(SPEED_EDITOR_SENSITIVITY_MIN as f64, SPEED_EDITOR_SENSITIVITY_MAX as f64, "%"),
+                true,
+            ),
         ],
     },
     Category {

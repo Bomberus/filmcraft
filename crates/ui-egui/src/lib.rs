@@ -60,6 +60,7 @@ mod rtl;
 pub mod scrub;
 mod shuttle;
 pub mod source_playback;
+pub mod speed_editor;
 pub mod state;
 pub mod theme;
 mod theme_favorites;
@@ -129,6 +130,8 @@ pub struct AudioDevices {
 /// Host hooks for native file dialogs etc.
 #[derive(Default)]
 pub struct HostHooks {
+    /// Poll a desktop USB control surface and publish its desired wheel mode / LEDs.
+    pub speed_editor: Option<Box<dyn FnMut(speed_editor::Feedback) -> Vec<speed_editor::Event>>>,
     pub pick_files: Option<Box<dyn FnMut(&[&str]) -> Vec<String>>>,
     /// The cursor in physical screen pixels. Where the windowing layer reports no pointer while files are dragged in from the OS (Windows), a drop is placed where this says it landed.
     pub cursor_screen_position: Option<Box<dyn Fn() -> Option<(i32, i32)>>>,
@@ -298,6 +301,7 @@ pub struct FilmcraftApp {
     pub frames: Arc<FrameServer>,
     pub playback: Playback,
     pub source_playback: source_playback::SourcePlayback,
+    pub speed_editor: speed_editor::State,
     pub audio: Option<Box<dyn AudioOut>>,
     /// Audio during scrubbing (#211).
     pub scrub: scrub::ScrubAudio,
@@ -636,6 +640,7 @@ impl FilmcraftApp {
             frames,
             playback: Playback { speed: 1.0, ..Default::default() },
             source_playback: Default::default(),
+            speed_editor: Default::default(),
             audio: None,
             scrub: Default::default(),
             hooks: HostHooks::default(),
@@ -2212,6 +2217,7 @@ impl FilmcraftApp {
         // the Timeline has had its chance to place a file drop this frame; anything left stays a bin import
         self.pending_timeline_drop = None;
         panels::dialogs::show(self, &ctx);
+        speed_editor::debugger::show(self, &ctx);
         updates_ui::show(self, &ctx);
         if !self.ui.show_status_bar {
             return;
@@ -2596,6 +2602,7 @@ impl FilmcraftApp {
         self.logic_background(ctx, now);
         self.logic_session_events(now);
         self.logic_command_inbox(ctx);
+        self.poll_speed_editor(ctx);
         self.advance_playback(ctx);
         self.advance_source_playback(ctx);
         self.poll_jobs(ctx);
