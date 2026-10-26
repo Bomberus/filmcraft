@@ -431,7 +431,7 @@ pub struct KeyframeRef {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UiState {
-    /// Nonmodal USB control-surface diagnostics (Devices ▸ Davinci Speed Editor).
+    /// Nonmodal USB control-surface diagnostics (Devices ▸ DaVinci Speed Editor).
     #[serde(default)]
     pub speed_editor_debugger: crate::speed_editor::debugger::WindowState,
     #[serde(default)]

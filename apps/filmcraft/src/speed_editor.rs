@@ -197,6 +197,17 @@ fn configure(device: &HidDevice, previous: Option<Feedback>, next: Feedback) -> 
 /// Fixed-size HID reports. Unknown report/key ids are ignored for firmware compatibility;
 /// malformed known reports disconnect safely instead of leaving modifiers held.
 fn decode(bytes: &[u8]) -> Result<Option<Event>, String> {
+    // Native HID backends can pad short reports to the device's maximum report size.
+    let expected = match bytes.first() {
+        Some(3) => 7,
+        Some(4) => 13,
+        Some(7) => 3,
+        _ => bytes.len(),
+    };
+    let bytes = match bytes.split_at_checked(expected) {
+        Some((report, padding)) if padding.iter().all(|byte| *byte == 0) => report,
+        _ => bytes,
+    };
     match bytes {
         [3, mode @ (0..=3), a, b, c, d, _] => Ok(Some(Event::Wheel { mode: *mode, value: i32::from_le_bytes([*a, *b, *c, *d]) })),
         [4, keys @ ..] if keys.len() == 12 => {
@@ -225,6 +236,28 @@ mod tests {
         assert_eq!(decode(&[3, 0, 0, 255, 255, 255, 0]).unwrap(), Some(Event::Wheel { mode: 0, value: -256 }));
         assert_eq!(decode(&[4, 0x2f, 0, 0x2f, 0, 0xff, 0xff, 0, 0, 0, 0, 0, 0]).unwrap(), Some(Event::Buttons(vec![Button::Split])));
         assert_eq!(decode(&[7, 1, 80]).unwrap(), Some(Event::Battery { charging: true, level: 80 }));
+    }
+
+    #[test]
+    fn known_reports_accept_zero_padding_and_reject_truncation_or_nonzero_padding() {
+        for report in [vec![3, 0, 0, 255, 255, 255, 0], vec![4, 0x2f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], vec![7, 1, 80]] {
+            let expected = decode(&report).unwrap();
+            for n in 0..report.len() {
+                assert!(decode(&report[..n]).is_err());
+            }
+            for len in report.len()..=64 {
+                let mut padded = report.clone();
+                padded.resize(len, 0);
+                assert_eq!(decode(&padded).unwrap(), expected);
+            }
+            let mut padded = report.clone();
+            padded.resize(64, 0);
+            for i in report.len()..padded.len() {
+                padded[i] = 1;
+                assert!(decode(&padded).is_err());
+                padded[i] = 0;
+            }
+        }
     }
 
     #[test]

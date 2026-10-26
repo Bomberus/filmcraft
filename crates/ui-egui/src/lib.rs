@@ -1308,6 +1308,39 @@ impl FilmcraftApp {
         self.playback.audio_retry_at = 0.0;
     }
 
+    /// Update continuous Program shuttle input without restarting preroll on every report.
+    pub(crate) fn shuttle_program(&mut self, ctx: &egui::Context, speed: f64) {
+        if !self.playback.playing || self.playback.speed.signum() != speed.signum() {
+            self.play(speed);
+            return;
+        }
+        if self.playback.speed == speed {
+            return;
+        }
+        if self.playback.preroll.is_none() {
+            // Input is polled before the normal playback tick. Consume the old clock
+            // before re-anchoring so a moving dial cannot discard every frame's elapsed time.
+            self.advance_playback(ctx);
+            if !self.playback.playing {
+                return;
+            }
+        }
+        self.playback.speed = speed;
+        self.playback.meter.start(speed);
+        if self.playback.preroll.is_some() {
+            // Keep the original deadline and readiness; audio starts at the latest rate.
+            return;
+        }
+        let now = self.now();
+        self.playback.anchor_tick = self.session.playhead();
+        self.playback.anchor_time = now;
+        self.playback.audio_seen = (0, now);
+        self.playback.audio_clock = false;
+        self.playback.audio_retry_at = 0.0;
+        // The mix rate depends on speed, so the old stream cannot keep driving the clock.
+        self.start_audio(now);
+    }
+
     /// Start the clock (and audio) once the first frames are ready or the preroll timed out.
     fn end_preroll(&mut self, now: f64) {
         self.playback.preroll = None;
@@ -3246,6 +3279,39 @@ mod audio_recovery_tests {
                 app.stop();
             }
         }
+    }
+
+    #[test]
+    fn shuttle_speed_changes_rebuild_audio_without_restarting_preroll() {
+        let mut session = Session::default();
+        session.execute("file.openDemoProject", json!({})).unwrap();
+        let ctx = egui::Context::default();
+        let mut app = FilmcraftApp::new(session);
+        let starts = Arc::new(AtomicUsize::new(0));
+        app.audio = Some(Box::new(Device { ready: true, starts: starts.clone(), reading: Some(0) }));
+        app.session.set_playhead(Tick::from_seconds_f64(2.0));
+        menus::invoke(&mut app, &ctx, "playback.shuttle", json!({"speed":1,"monitor":"program"})).unwrap();
+        app.end_preroll(10.0);
+        assert_eq!(starts.load(Ordering::Relaxed), 1);
+        for (now, speed, expected_starts) in [(10.0, 2.0, 2), (10.1, 2.0, 2), (10.2, 8.0, 2), (10.3, 1.0, 3)] {
+            let changed = app.playback.speed != speed;
+            let elapsed = if app.playback.audio_clock { 0.0 } else { now - app.playback.anchor_time };
+            let position = app.session.sequence_rate().snap(app.playback.anchor_tick + Tick::from_seconds_f64(elapsed * app.playback.speed));
+            app.set_now_for_test(now);
+            menus::invoke(&mut app, &ctx, "playback.shuttle", json!({"speed":speed,"monitor":"program"})).unwrap();
+            assert!(app.playback.preroll.is_none());
+            assert_eq!(app.session.playhead(), position, "the old clock must be consumed before changing speed");
+            assert_eq!(starts.load(Ordering::Relaxed), expected_starts, "only changed audible speeds rebuild the output");
+            assert_eq!(app.playback.audio_clock, speed <= 4.0);
+            assert_eq!(app.playback.speed, speed);
+            if changed {
+                assert_eq!(app.playback.anchor_tick, position);
+                assert_eq!(app.playback.anchor_time, now);
+                assert_eq!(app.playback.audio_seen, (0, now));
+            }
+        }
+        menus::invoke(&mut app, &ctx, "playback.shuttle", json!({"speed":0,"monitor":"program"})).unwrap();
+        assert!(!app.playback.playing);
     }
 
     #[test]

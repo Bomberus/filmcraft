@@ -781,6 +781,42 @@ mod tests {
     }
 
     #[test]
+    fn shuttle_reports_preserve_preroll_and_running_clock() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.session.execute("file.newSequence", json!({"fps":24,"width":16,"height":16})).unwrap();
+        app.session.execute("timeline.place", json!({"item":5,"track":"V1","time":0})).unwrap();
+        app.session.execute("playhead.set", json!({"frame":100})).unwrap();
+        tap(&mut app, Button::Shuttle);
+        wheel(&mut app, 3, 512);
+        app.set_now_for_test(1.0);
+        app.advance_playback(&ctx);
+        assert_eq!(app.playback.preroll, Some(1.0));
+        app.playback.preroll_ready = true;
+        wheel(&mut app, 3, 1024);
+        assert_eq!(app.playback.preroll, Some(1.0), "dial reports must not restart a pending preroll");
+        assert!(app.playback.preroll_ready);
+        app.advance_playback(&ctx);
+        assert!(app.playback.preroll.is_none());
+        let rate = app.session.sequence_rate();
+        let mut expected = app.session.playhead();
+        for (now, previous_speed, value) in [(1.25, 2.0, 512), (1.5, 1.0, 512), (1.75, 1.0, 1024)] {
+            app.set_now_for_test(now);
+            wheel(&mut app, 3, value);
+            assert!(app.playback.preroll.is_none(), "running shuttle must not enter preroll again");
+            app.advance_playback(&ctx);
+            expected = rate.snap(expected + Tick::from_seconds_f64(0.25 * previous_speed));
+            assert_eq!(app.session.playhead(), expected);
+        }
+        app.set_now_for_test(2.0);
+        app.advance_playback(&ctx);
+        assert_eq!(app.session.playhead(), expected + rate.tick_of(12));
+        wheel(&mut app, 3, -512);
+        assert!(app.playback.preroll.is_some(), "direction changes still prepare new frames");
+        assert_eq!(app.playback.speed, -1.0);
+    }
+
+    #[test]
     fn held_trim_uses_wheel_and_release_exits_trim_mode_with_undo() {
         let mut app = app();
         app.session.execute("timeline.setTrack", json!({"track":"A2", "syncLock":false})).unwrap();

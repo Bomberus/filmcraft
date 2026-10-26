@@ -3,7 +3,7 @@
 USB Speed Editor status and input are available through `speedEditor.status` and
 `speedEditor.input` with `engine.execute`; `ui.inspect.speedEditor` includes the current
 controller state. See [parameters and button bindings](speed-editor.md#automation-and-validation).
-`devices.speedEditor {open?, monitorOnly?, sensitivity?}` opens or configures the Devices → Davinci Speed Editor
+`devices.speedEditor {open?, monitorOnly?, sensitivity?}` opens or configures the Devices → DaVinci Speed Editor
 debugger; `speedEditor.debugger.clear {}` clears its bounded event history. Raw activity is in
 `speedEditor.status.telemetry`, including inputs suppressed by the ordinary editing/focus guards.
 `sensitivity` is an integer percentage from 1 to 200, saved as `general.speedEditorSensitivity`;

@@ -2,7 +2,7 @@
 
 - USB Blackmagic Design Speed Editor: native Linux/Windows host integration, Jog/Scroll/Shuttle,
   cutting and held-wheel trims, Source/Timeline marks and placement, LED feedback and reconnect.
-  Devices → Davinci Speed Editor shows connection state, key/dial highlights and recent raw
+  Devices → DaVinci Speed Editor shows connection state, key/dial highlights and recent raw
   input over the licensed board photograph, with a monitor-only debugging option.
   A saved 1–200% Knob sensitivity slider scales Jog, Scroll, wheel edits and Shuttle.
   Secondary double taps support Undo, Move/Slide, Mark, transition-duration defaults,
@@ -14,7 +14,7 @@
 
 **Stage: alpha** · next: beta, ~19 points of ready-for-real-work and ~400–700 h away, plus opening Premiere's `.prproj` ([why](docs/target-app-parity.md#stage); passes the [core-workflow gate](docs/roadmap.md#alpha-gate))
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (USB Speed Editor controls and ProRes alpha conformance) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (USB Speed Editor controls) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Progress toward parity with Adobe Premiere Pro. This page is the summary; the detail is in
 [docs/target-app-parity.md](docs/target-app-parity.md) (assessment, methodology, calibration),
@@ -177,6 +177,7 @@ Ranked; detail and "done when" in [docs/roadmap.md](docs/roadmap.md) and [docs/g
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | USB Speed Editor controls and platform-validation documentation |
 | 2026-10-22 | minor | ProRes alpha: write the final singleton run code; 4444/XQ HD clips that failed native macOS decoding now decode, with syntax regression tests (EffectCraft #293) |
 | 2026-10-13 | minor | Language table: German covers the whole interface (~100%) |
 | 2026-10-12 | trivial | Progress log: Transform shutter on adjustment layers (#1088) |

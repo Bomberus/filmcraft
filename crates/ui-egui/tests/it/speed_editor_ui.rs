@@ -19,7 +19,7 @@ fn devices_menu_opens_a_nonmodal_window_with_photo_and_connection_status() {
     harness.step();
     let ctx = harness.ctx.clone();
     let menu = menus::menu_items(harness.state());
-    assert!(menu.iter().any(|item| item.id == "devices.speedEditor" && item.label == "Davinci Speed Editor" && item.path == ["Devices"]));
+    assert!(menu.iter().any(|item| item.id == "devices.speedEditor" && item.label == "DaVinci Speed Editor" && item.path == ["Devices"]));
     menus::invoke(harness.state_mut(), &ctx, "devices.speedEditor", json!({})).unwrap();
     harness.step();
     harness.step();

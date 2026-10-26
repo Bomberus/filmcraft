@@ -13,7 +13,12 @@ same path from the control channel. See [controls, setup and limitations](../../
 The module's tests cover cuts and undo/redo, key repeats, fractional/signed wheel movement,
 Source/Timeline marks, trims, source placement and hostile parameters.
 
-Devices → Davinci Speed Editor opens `speed_editor/debugger.rs`: a nonmodal photo overlay
+Program Shuttle reports retain pending preroll readiness and deadlines. While playing, a new
+speed re-anchors the clock at the current playhead and rebuilds the audio mix at that rate;
+unchanged reports keep the stream running. Direction changes use the normal preroll. Regression
+tests cover continuous dial input, audio restarts, silent speeds and returning to audible playback.
+
+Devices → DaVinci Speed Editor opens `speed_editor/debugger.rs`: a nonmodal photo overlay
 with held/recent key highlights, dial movement, USB/battery status and a bounded input log.
 Telemetry is collected before focus and editing guards, including for unsupported keys.
 The default Monitor only mode suppresses editing while the window is open. Window state is

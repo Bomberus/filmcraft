@@ -323,7 +323,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         return;
     }
     let mut open = true;
-    let shown = egui::Window::new("Davinci Speed Editor")
+    let shown = egui::Window::new("DaVinci Speed Editor")
         .id(egui::Id::unique("speed-editor-debugger"))
         .open(&mut open)
         .collapsible(false)
@@ -423,7 +423,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
             app.auto.add("speedEditor.debugger.history", log.inner_rect, "Recent Speed Editor events");
         });
     if let Some(shown) = shown {
-        app.auto.add("speedEditor.debugger.window", shown.response.rect, "Davinci Speed Editor");
+        app.auto.add("speedEditor.debugger.window", shown.response.rect, "DaVinci Speed Editor");
     }
     if !open {
         invoke(app, ctx, "devices.speedEditor", json!({"open":false}));

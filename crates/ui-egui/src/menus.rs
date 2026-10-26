@@ -45,7 +45,7 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("playback.shuttle", "Shuttle at Speed", [], None),
     uic!("speedEditor.status", "Speed Editor Status", [], None),
     uic!("speedEditor.input", "Speed Editor Input", [], None),
-    uic!("devices.speedEditor", "Davinci Speed Editor", ["Devices"], None),
+    uic!("devices.speedEditor", "DaVinci Speed Editor", ["Devices"], None),
     uic!("speedEditor.debugger.clear", "Clear Speed Editor History", [], None),
     uic!("playback.forward", "Shuttle Right", [], Some("L")),
     uic!("playback.stop", "Shuttle Stop", [], Some("K")),
@@ -355,7 +355,7 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             } else if speed == 0.0 {
                 app.stop();
             } else {
-                app.play(speed);
+                app.shuttle_program(ctx, speed);
             }
             return Ok(json!({"speed": speed}));
         }

@@ -8,7 +8,7 @@ macOS and Bluetooth transport are not implemented.
 
 ## Input debugger
 
-Open **Devices → Davinci Speed Editor** for a resizable, nonmodal diagnostics window.
+Open **Devices → DaVinci Speed Editor** for a resizable, nonmodal diagnostics window.
 It uses the supplied front-view photograph, with **green** overlays on held keys,
 **amber** overlays for 600 ms after a press or release, and a **blue** dial indicator when
 the wheel moves. **Purple** marks a detected double tap; the last secondary action and
@@ -177,6 +177,11 @@ from a previously selected wheel mode are ignored. Fractional Jog movement accum
 hostile relative values are capped to ten revolutions per report. Six simultaneous keys
 and 256 pending reports are the maximum. Overflow discards pending edits and reconnects.
 Adjacent wheel reports combine while the UI renders; button edges keep their original order.
+Known HID reports accept trailing zero padding from native backends; truncated reports and
+nonzero padding remain errors. Program Shuttle speed updates preserve a pending preroll and
+re-anchor running playback at the current playhead, rebuilding audio for the new rate.
+Repeating the same speed leaves the running clock and audio stream alone; changing direction
+prepares new frames through the normal preroll.
 `speedEditor.status.telemetry` contains raw pressed keys, pulse deadlines, dial motion and
 bounded event history. `ui.inspect.ui.speed_editor_debugger` contains the window's open and
 monitor-only state. Its widgets use the `speedEditor.debugger.*` automation-id prefix.
@@ -190,7 +195,8 @@ cargo test -p filmcraft --bin filmcraft usb_speed_editor_smoke -- --ignored --no
 
 Tests cover key edges, signed/fractional scrubbing, monitor routing, trim release,
 source append, undo/redo, shuttle stopping, malformed parameters, truncated and mutated
-HID reports, queue overflow and authentication replies. Gesture tests cover single/double timing,
+HID reports, zero-padded native reports, continuous Shuttle speed changes and audio restarts,
+queue overflow and authentication replies. Gesture tests cover single/double timing,
 queued native timestamps, Move/Slide undo, Source/Timeline markers and clear marks, whole-clip
 append, title placement, default-transition persistence and cancelled pending cuts.
 The opt-in hardware test performs
