@@ -181,27 +181,20 @@ pub struct HostHooks {
     /// (#611). Without it Paste only pastes clips copied in FilmCraft.
     pub clipboard_media: Option<Box<dyn FnMut() -> Option<ClipboardMedia>>>,
 }
+mod app;
+mod audio;
+mod gpu;
+mod hooks;
+mod raw_input;
 
-/// What [`HostHooks::clipboard_media`] found on the system clipboard.
-pub enum ClipboardMedia {
-    /// Files copied in the file manager.
-    Files(Vec<String>),
-    /// An image (a screenshot, an image copied in a browser): 8-bit RGBA, row by row.
-    Image { width: usize, height: usize, rgba: Vec<u8> },
-}
+use audio::shuttle_mix_rate;
+pub use audio::{AUDIO_RETRY_S, AUDIO_STALL_S, playback_mix};
+pub use gpu::{gpu_compositor_unsupported, software_rasterizer};
+pub use hooks::{AudioDevices, AudioOut, ClipboardMedia, HostHooks, RelinkHint, SystemThemeFn};
+pub(crate) use raw_input::rewrite_native_window_input;
 
-/// Reads the system appearance (Settings ▸ Appearance ▸ Appearance Mode ▸ Sync with system).
-pub type SystemThemeFn = Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>;
-
-/// The command a [`HostHooks::pick_file_for_relink`] caller runs with the chosen file, for hosts
-/// that can only run it later.
-#[derive(Clone, Debug)]
-pub struct RelinkHint {
-    /// `media.relink`, `media.attachProxies` or `media.reconnectFullRes`.
-    pub command: String,
-    /// Its parameters, without `"path"`.
-    pub params: serde_json::Value,
-}
+pub use ime_reset::install_ime_reset_callbacks;
+pub(crate) use native_dialogs::EXPORT_SAVE_DIALOGS;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Dialog {
@@ -260,29 +253,6 @@ pub struct Playback {
     /// names the last visible frame, not the following playback boundary.
     pub rest_at: Option<Tick>,
 }
-
-/// How long (s) the audio clock may stand still during playback before the wall clock takes over.
-/// An output stream can open and then never call back (ALSA with a busy or misconfigured device,
-/// #136); playback must not freeze on it. Devices that are slow to start (Bluetooth) stay well
-/// under this.
-pub const AUDIO_STALL_S: f64 = 1.0;
-
-/// How often (s) playback re-opens the output after its stream or device failed, while playing
-/// goes on silently on the wall clock. Reopening is what pause/play does by hand; doing it on a
-/// timer brings the sound back when the device recovers (#2503).
-pub const AUDIO_RETRY_S: f64 = 2.0;
-
-/// Export entries that run from the menus through the save panel: command, filter label,
-/// extension.
-pub(crate) const EXPORT_SAVE_DIALOGS: [(&str, &str, &str); 7] = [
-    ("markers.exportCsv", "Marker report (CSV)", "csv"),
-    ("file.exportEdl", "EDL", "edl"),
-    ("file.exportFcp7Xml", "Final Cut Pro XML", "xml"),
-    ("file.exportFcpxml", "FCPXML", "fcpxml"),
-    ("file.exportOtio", "OpenTimelineIO", "otio"),
-    ("file.exportAle", "Avid Log Exchange", "ale"),
-    ("file.exportSelectionProject", "FilmCraft Project", "fcproj"),
-];
 
 /// Incoming composition identity for the Program monitor. Interrupted compositions remain
 /// Stale until the matching opaque native reset fence; output or old terminal input is not
@@ -1870,7 +1840,7 @@ impl FilmcraftApp {
             .hooks
             .cursor_screen_position
             .as_ref()
-            .and_then(|f| f())
+            .and_then(|f| f()
             .and_then(|px| ctx.input_for(viewport, |i| i.viewport().inner_rect.map(|r| screen_px_to_ui(px, i.pixels_per_point, r.min))));
         let fallback = || if viewport == egui::ViewportId::ROOT { ctx.input(|i| i.pointer.hover_pos().or(i.pointer.latest_pos())) } else { None };
         os_pointer.or(last).or_else(fallback)
